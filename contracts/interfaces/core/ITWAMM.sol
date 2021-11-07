@@ -26,6 +26,7 @@ interface ITWAMM {
      */
     function regularSwap(
         bool zeroForOne,
+        bool isExactInput,
         int256 amountSpecified,
         uint160 sqrtPriceLimitX96
     ) external returns (int256 amount0, int256 amount1);
@@ -69,4 +70,5 @@ interface ITWAMM {
         uint128 amount0Requested,
         uint128 amount1Requested
     ) external returns (uint128 amount0, uint128 amount1);
+    
 }
