@@ -50,7 +50,7 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
         v3Pool = _v3Pool;
     }
 
-    function roundUp (uint256 numToRound, uint256 multiple) internal pure {
+    function roundUp (uint256 numToRound, uint256 multiple) internal pure returns(uint256){
         uint256 remainder = numToRound % multiple;
         if(remainder==0) return numToRound;
         else return numToRound + multiple - remainder;
@@ -58,7 +58,7 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
 
     function longTermOrder(bool zeroForOne, uint256 amountSpecified, uint256 blocks) external {
         uint256 amountPerBlock = amountSpecified/blocks;
-        FluidOrder storage order = FluidOrder(zeroForOne,amountPerBlock,msg.sender());
+        FluidOrder memory order = FluidOrder(zeroForOne,amountPerBlock,msg.sender);
         uint256 endBlockNumber = roundUp(block.number,50) + blocks;
 
         lastOrderNum++;
@@ -75,11 +75,11 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
         }
     }
 
-    function uniV3Swap(bool zeroForOne, bool isExactInput, uint256 amountSpecified, uint256 sqrtPriceLimitX96){
+    function uniV3Swap(bool zeroForOne, bool isExactInput, uint256 amountSpecified, uint256 sqrtPriceLimitX96) internal{
         //TODO
     }
 
-    function remove(uint256[] array, uint256 indexToRemove) internal {
+    function remove(uint256[] storage array, uint256 indexToRemove) internal {
         require(indexToRemove>array.length-1);
         
         array[indexToRemove] = array[array.length-1];
@@ -87,11 +87,11 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
     }
 
     function expireLongOrders() internal {
-        uint256[] ordersToExpire = orderExpiryMap[block.number];
+        uint256[] storage ordersToExpire = orderExpiryMap[block.number];
         
-        for(int i=0; i<ordersToExpire.length; i++){
+        for(uint i=0; i<ordersToExpire.length; i++){
 
-            FluidOrder order = orders[activeOrders[ordersToExpire[i]]];
+            FluidOrder storage order = orders[activeOrders[ordersToExpire[i]]];
             remove(activeOrders,ordersToExpire[i]);
             if(order.zeroForOne){
                 token1RatePerBlock-=order.amountPerBlock;
@@ -107,8 +107,8 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
         uint256 token0ToSwap = token0RatePerBlock*(block.number-lastSwapBlock);
         uint256 token1ToSwap = token1RatePerBlock*(block.number-lastSwapBlock);
 
-        uniV3Swap(false, false, token0ToSwap, sqrtPriceLimitx96);
-        uniV3Swap(true, false, token1ToSwap, sqrtPriceLimitx96);
+        uniV3Swap(false, false, token0ToSwap, sqrtPriceLimitX96);
+        uniV3Swap(true, false, token1ToSwap, sqrtPriceLimitX96);
 
         uniV3Swap(zeroForOne, isExactInput, amountSpecified, sqrtPriceLimitX96);
 
