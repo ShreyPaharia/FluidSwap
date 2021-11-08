@@ -10,10 +10,8 @@ import "../interfaces/uniswap/IUniswapV3SwapCallback.sol";
 
 import "../interfaces/common/IERC20.sol";
 
-import "../utils/WrapUtils.sol";
-
 /// @notice remove abstract after implementing ITWAMM
-abstract contract TWAMM is ITWAMM, WrapUtils {
+abstract contract TWAMM is ITWAMM {
 
     struct FluidOrder {
         bool zeroForOne;
@@ -43,14 +41,14 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
     uint256[] public activeOrders;
 
     //Nonce => Fluid Order
-    mapping(uint256 => FluidOrder) orders;
+    mapping(uint256 => FluidOrder) public orders;
 
 
     constructor(address _v3Pool) {
         v3Pool = _v3Pool;
     }
 
-    function roundUp (uint256 numToRound, uint256 multiple) internal pure {
+    function roundUp (uint256 numToRound, uint256 multiple) internal pure returns (uint256 rounded) {
         uint256 remainder = numToRound % multiple;
         if(remainder==0) return numToRound;
         else return numToRound + multiple - remainder;
@@ -58,7 +56,8 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
 
     function longTermOrder(bool zeroForOne, uint256 amountSpecified, uint256 blocks) external {
         uint256 amountPerBlock = amountSpecified/blocks;
-        FluidOrder storage order = FluidOrder(zeroForOne,amountPerBlock,msg.sender());
+        FluidOrder memory order = FluidOrder(zeroForOne,amountPerBlock,msg.sender);
+
         uint256 endBlockNumber = roundUp(block.number,50) + blocks;
 
         lastOrderNum++;
@@ -75,23 +74,28 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
         }
     }
 
-    function uniV3Swap(bool zeroForOne, bool isExactInput, uint256 amountSpecified, uint256 sqrtPriceLimitX96){
-        //TODO
+    function uniV3Swap(
+        bool zeroForOne,
+        bool isExactInput,
+        uint256 amountSpecified,
+        uint256 sqrtPriceLimitX96) public {
+
+        ///@TODO
     }
 
-    function remove(uint256[] array, uint256 indexToRemove) internal {
-        require(indexToRemove>array.length-1);
+    function remove(uint256[] memory array, uint256 indexToRemove) internal pure {
+        require(indexToRemove>array.length-1, "out of bounds");
         
         array[indexToRemove] = array[array.length-1];
         delete array[array.length-1];
     }
 
     function expireLongOrders() internal {
-        uint256[] ordersToExpire = orderExpiryMap[block.number];
+        uint256[] storage ordersToExpire = orderExpiryMap[block.number];
         
-        for(int i=0; i<ordersToExpire.length; i++){
+        for(uint i=0; i<ordersToExpire.length; i++){
 
-            FluidOrder order = orders[activeOrders[ordersToExpire[i]]];
+            FluidOrder storage order = orders[activeOrders[ordersToExpire[i]]];
             remove(activeOrders,ordersToExpire[i]);
             if(order.zeroForOne){
                 token1RatePerBlock-=order.amountPerBlock;
@@ -107,8 +111,8 @@ abstract contract TWAMM is ITWAMM, WrapUtils {
         uint256 token0ToSwap = token0RatePerBlock*(block.number-lastSwapBlock);
         uint256 token1ToSwap = token1RatePerBlock*(block.number-lastSwapBlock);
 
-        uniV3Swap(false, false, token0ToSwap, sqrtPriceLimitx96);
-        uniV3Swap(true, false, token1ToSwap, sqrtPriceLimitx96);
+        uniV3Swap(false, false, token0ToSwap, sqrtPriceLimitX96);
+        uniV3Swap(true, false, token1ToSwap, sqrtPriceLimitX96);
 
         uniV3Swap(zeroForOne, isExactInput, amountSpecified, sqrtPriceLimitX96);
 
