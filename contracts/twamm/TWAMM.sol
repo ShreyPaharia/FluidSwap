@@ -48,7 +48,7 @@ abstract contract TWAMM is ITWAMM {
         v3Pool = _v3Pool;
     }
 
-    function roundUp (uint256 numToRound, uint256 multiple) internal pure returns (uint256 rounded) {
+    function roundUp (uint256 numToRound, uint256 multiple) internal pure returns(uint256){
         uint256 remainder = numToRound % multiple;
         if(remainder==0) return numToRound;
         else return numToRound + multiple - remainder;
@@ -57,7 +57,6 @@ abstract contract TWAMM is ITWAMM {
     function longTermOrder(bool zeroForOne, uint256 amountSpecified, uint256 blocks) external {
         uint256 amountPerBlock = amountSpecified/blocks;
         FluidOrder memory order = FluidOrder(zeroForOne,amountPerBlock,msg.sender);
-
         uint256 endBlockNumber = roundUp(block.number,50) + blocks;
 
         lastOrderNum++;
@@ -70,21 +69,16 @@ abstract contract TWAMM is ITWAMM {
         if(zeroForOne) {
             token1RatePerBlock += amountPerBlock;
         } else {
-            token0RatePerBlock += amountPerBlock;
+            token0RatePerBlock -= amountPerBlock;
         }
     }
 
-    function uniV3Swap(
-        bool zeroForOne,
-        bool isExactInput,
-        uint256 amountSpecified,
-        uint256 sqrtPriceLimitX96) public {
-
-        ///@TODO
+    function uniV3Swap(bool zeroForOne, bool isExactInput, uint256 amountSpecified, uint256 sqrtPriceLimitX96) internal{
+        //TODO
     }
 
-    function remove(uint256[] memory array, uint256 indexToRemove) internal pure {
-        require(indexToRemove>array.length-1, "out of bounds");
+    function remove(uint256[] storage array, uint256 indexToRemove) internal {
+        require(indexToRemove>array.length-1);
         
         array[indexToRemove] = array[array.length-1];
         delete array[array.length-1];
